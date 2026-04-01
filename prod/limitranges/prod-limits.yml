@@ -1,0 +1,15 @@
+# LimitRange = rules for each pod/container inside that namespace
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: prod-limits
+  namespace: prod
+spec:
+  limits:
+  - default:
+      cpu: 1000m
+      memory: 1Gi
+    defaultRequest:
+      cpu: 200m
+      memory: 256Mi
+    type: Container       #so here type can be =Conatiner, Pod, PersistentVolumeClaim, 

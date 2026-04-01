@@ -1,0 +1,13 @@
+# Ignore certificate and key files
+*.crt
+*.key
+
+# Ignore Certificate Signing Request files
+*.csr
+
+# Ignore kubeconfig files
+*kubeconfig
+
+# Ignore any other sensitive files
+*.secret.yaml
+*.token

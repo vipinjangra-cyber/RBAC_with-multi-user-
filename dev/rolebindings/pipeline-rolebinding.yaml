@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: dev-pipeline-binding
+  namespace: dev
+subjects:
+- kind: ServiceAccount
+  name: dev-pipeline-sa
+  namespace: dev
+roleRef:
+  kind: Role
+  name: pipeline
+  apiGroup: rbac.authorization.k8s.io

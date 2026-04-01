@@ -1,0 +1,15 @@
+# making such limit.yml , as a default cpu and memeory will be allocated per pod/container if user doesn't define it inside its pods section.
+apiVersion: v1
+kind: LimitRange              #LimitRange = per container/pod rules
+metadata:
+  name: dev-limits
+  namespace: dev
+spec:
+  limits:
+  - default:
+      cpu: 500m
+      memory: 512Mi
+    defaultRequest:
+      cpu: 100m
+      memory: 128Mi
+    type: Container

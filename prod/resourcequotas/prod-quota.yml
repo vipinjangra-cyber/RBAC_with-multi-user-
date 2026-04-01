@@ -1,0 +1,13 @@
+# ResourceQuota = total limit for a namespace
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: prod-quota
+  namespace: prod
+spec:
+  hard:
+    requests.cpu: "20"
+    requests.memory: 50Gi
+    limits.cpu: "40"
+    limits.memory: 100Gi
+    pods: "100"
