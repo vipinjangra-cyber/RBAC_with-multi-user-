@@ -1,30 +1,48 @@
-Kubernetes Multi-User RBAC with Istio
+# 🔐 Kubernetes Multi-User RBAC with Istio
 
-Table of Contents
+> A production-ready setup for Role-Based Access Control (RBAC) in Kubernetes with Istio service mesh integration — enabling secure, isolated, and observable multi-user environments.
 
-Overview
-Project Structure
-Prerequisites
-Setup Instructions
+---
 
-Cluster-Wide Roles
-Namespaces
-Roles and RoleBindings
-Service Accounts
-Istio Setup
+## 📋 Table of Contents
 
-Usage
-Troubleshooting
-Best Practices
-License
+- [Overview](#overview)
+- [Project Structure](#project-structure)
+- [Prerequisites](#prerequisites)
+- [Setup Instructions](#setup-instructions)
+  - [1. Cluster-Wide Roles](#1-cluster-wide-roles)
+  - [2. Namespaces](#2-namespaces)
+  - [3. Roles & RoleBindings](#3-roles--rolebindings)
+  - [4. Service Accounts](#4-service-accounts)
+  - [5. Resource Quotas & Limit Ranges](#5-resource-quotas--limit-ranges)
+  - [6. Istio Setup](#6-istio-setup)
+- [Usage](#usage)
+- [Troubleshooting](#troubleshooting)
+- [Best Practices](#best-practices)
+- [License](#license)
 
-Overview <a name="overview"></a>
-This project provides a structured approach to setting up Role-Based Access Control (RBAC) in Kubernetes for multiple users, along with integrating Istio for enhanced security and observability. Each user is restricted to specific namespaces and roles, ensuring secure and isolated access.
+---
 
-Project Structure <a name="project-structure"></a>
-text
-Copy
+## 🧭 Overview
 
+This project provides a **structured, scalable approach** to managing multi-user access in Kubernetes using RBAC, combined with **Istio** for advanced service mesh capabilities including mTLS, traffic management, and observability.
+
+### Key Features
+
+| Feature | Description |
+|---|---|
+| 🔒 **RBAC** | Fine-grained access control per user and namespace |
+| 🌐 **Istio Integration** | mTLS, traffic policies, and observability via Kiali |
+| 🏗️ **Multi-Namespace** | Isolated `dev` and `prod` environments |
+| ⚙️ **Service Accounts** | Dedicated accounts for CI/CD pipelines |
+| 📊 **Resource Governance** | Quotas and limit ranges per namespace |
+| 🔑 **Certificate-Based Auth** | X.509 certificates for user authentication |
+
+---
+
+## 📁 Project Structure
+
+```
 RBAC_MULTI_USER/
 ├── cluster/
 │   ├── clusterroles/
@@ -33,69 +51,84 @@ RBAC_MULTI_USER/
 │   └── clusterrolebindings/
 │       ├── devops-engineer-clusterrolebinding.yaml
 │       └── monitoring-clusterrolebinding.yaml
+│
 ├── dev/
 │   ├── limitranges/
 │   │   └── dev-limits.yaml
 │   ├── resourcequotas/
 │   │   └── dev-quota.yaml
-│   ├── rolebindings/
-│   │   ├── developer-rolebinding.yaml
-│   │   ├── pipeline-rolebinding.yaml
-│   │   └── viewer-rolebinding.yaml
 │   ├── roles/
 │   │   ├── developer-role.yaml
 │   │   ├── pipeline-role.yaml
 │   │   └── viewer-role.yaml
+│   ├── rolebindings/
+│   │   ├── developer-rolebinding.yaml
+│   │   ├── pipeline-rolebinding.yaml
+│   │   └── viewer-rolebinding.yaml
 │   └── serviceaccounts/
 │       ├── pipeline-sa.yaml
 │       └── vijay-sa.yaml
+│
 ├── prod/
 │   ├── limitranges/
 │   │   └── prod-limits.yaml
 │   ├── resourcequotas/
 │   │   └── prod-quota.yaml
-│   ├── rolebindings/
-│   │   ├── db-admin-rolebinding.yaml
-│   │   ├── pipeline-rolebinding.yaml
-│   │   └── viewer-rolebinding.yaml
 │   ├── roles/
 │   │   ├── db-admin-role.yaml
 │   │   ├── pipeline-role.yaml
 │   │   └── viewer-role.yaml
+│   ├── rolebindings/
+│   │   ├── db-admin-rolebinding.yaml
+│   │   ├── pipeline-rolebinding.yaml
+│   │   └── viewer-rolebinding.yaml
 │   └── serviceaccounts/
 │       └── pipeline-sa.yaml
+│
 ├── istio-1.29.1/
 │   └── (Istio configuration files)
+│
 ├── certificates/
-│   ├── devuser.crt
-│   ├── devuser.csr
-│   ├── devuser.key
-│   ├── vijay.crt
-│   ├── vijay.csr
-│   ├── vijay.key
-│   ├── vipin.crt
-│   ├── vipin.csr
-│   └── vipin.key
+│   ├── devuser.{crt,csr,key}
+│   ├── vijay.{crt,csr,key}
+│   └── vipin.{crt,csr,key}
+│
 └── README.md
+```
 
+### User → Role Mapping
 
+| User | Namespace | Role | Access Level |
+|---|---|---|---|
+| `vipin` | `dev` | `developer` | Full CRUD on pods, services, deployments |
+| `devuser` | `prod` | `db-admin` | Full CRUD including secrets |
+| `vijay` | `dev` | Custom SA | Via service account |
+| Monitoring Group | Cluster-wide | `monitoring` | Read-only on pods, services, nodes |
+| DevOps Engineer | Cluster-wide | `devops-engineer` | Full cluster access |
 
+---
 
-Prerequisites <a name="prerequisites"></a>
+## ✅ Prerequisites
 
-A running Kubernetes cluster (e.g., kind, minikube, or kubeadm).
-kubectl installed and configured.
-openssl installed on your machine.
-Root or sudo access to create Linux users and manage files.
-Istio installed (version 1.29.1 or compatible).
+Ensure the following are available before proceeding:
 
-Setup Instructions <a name="setup-instructions"></a>
-Cluster-Wide Roles <a name="cluster-wide-roles"></a>
-Cluster-wide roles define permissions that apply across all namespaces.
-Monitoring ClusterRole
-yaml
-Copy
+- [ ] A running Kubernetes cluster (`kind`, `minikube`, or `kubeadm`)
+- [ ] `kubectl` installed and configured
+- [ ] `openssl` installed for certificate generation
+- [ ] Root/sudo access for Linux user management
+- [ ] Istio v1.29.1 (or compatible) installed
 
+---
+
+## 🛠️ Setup Instructions
+
+### 1. Cluster-Wide Roles
+
+Cluster roles apply across **all namespaces** and are used for platform-level personas.
+
+#### Monitoring ClusterRole
+
+```yaml
 # cluster/clusterroles/monitoring-clusterrole.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -105,13 +138,11 @@ rules:
 - apiGroups: [""]
   resources: ["pods", "services", "nodes"]
   verbs: ["get", "list", "watch"]
+```
 
+#### DevOps Engineer ClusterRole
 
-
-DevOps Engineer ClusterRole
-yaml
-Copy
-
+```yaml
 # cluster/clusterroles/devops-engineer-clusterrole.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -121,21 +152,11 @@ rules:
 - apiGroups: [""]
   resources: ["*"]
   verbs: ["*"]
+```
 
+#### Monitoring ClusterRoleBinding
 
-
-Apply these roles:
-bash
-Copy
-
-kubectl apply -f cluster/clusterroles/
-
-
-
-ClusterRoleBindings
-yaml
-Copy
-
+```yaml
 # cluster/clusterrolebindings/monitoring-clusterrolebinding.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -149,60 +170,48 @@ roleRef:
   kind: ClusterRole
   name: monitoring
   apiGroup: rbac.authorization.k8s.io
+```
 
-
-
-Apply these bindings:
-bash
-Copy
-
+```bash
+# Apply all cluster-level resources
+kubectl apply -f cluster/clusterroles/
 kubectl apply -f cluster/clusterrolebindings/
+```
 
+---
 
+### 2. Namespaces
 
-
-Namespaces <a name="namespaces"></a>
-Define namespaces for dev and prod.
-Dev Namespace
-yaml
-Copy
-
+```yaml
 # dev/namespace.yaml
 apiVersion: v1
 kind: Namespace
 metadata:
   name: dev
+```
 
-
-
-Prod Namespace
-yaml
-Copy
-
+```yaml
 # prod/namespace.yaml
 apiVersion: v1
 kind: Namespace
 metadata:
   name: prod
+```
 
-
-
-Apply these namespaces:
-bash
-Copy
-
+```bash
 kubectl apply -f dev/namespace.yaml
 kubectl apply -f prod/namespace.yaml
+```
 
+---
 
+### 3. Roles & RoleBindings
 
+#### Dev Namespace
 
-Roles and RoleBindings <a name="roles-and-rolebindings"></a>
-Dev Namespace Roles and RoleBindings
-Developer Role
-yaml
-Copy
+**Developer Role** — grants CRUD access to core workload resources:
 
+```yaml
 # dev/roles/developer-role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -213,13 +222,11 @@ rules:
 - apiGroups: [""]
   resources: ["pods", "services", "deployments"]
   verbs: ["get", "list", "watch", "create", "update", "delete"]
+```
 
+**Developer RoleBinding** — binds user `vipin` to the developer role:
 
-
-Developer RoleBinding
-yaml
-Copy
-
+```yaml
 # dev/rolebindings/developer-rolebinding.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -234,23 +241,18 @@ roleRef:
   kind: Role
   name: developer
   apiGroup: rbac.authorization.k8s.io
+```
 
-
-
-Apply these roles and bindings:
-bash
-Copy
-
+```bash
 kubectl apply -f dev/roles/
 kubectl apply -f dev/rolebindings/
+```
 
+#### Prod Namespace
 
+**DB Admin Role** — includes access to `secrets` for database credential management:
 
-Prod Namespace Roles and RoleBindings
-DB Admin Role
-yaml
-Copy
-
+```yaml
 # prod/roles/db-admin-role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -261,13 +263,11 @@ rules:
 - apiGroups: [""]
   resources: ["pods", "services", "deployments", "secrets"]
   verbs: ["get", "list", "watch", "create", "update", "delete"]
+```
 
+**DB Admin RoleBinding** — binds user `devuser` to the db-admin role:
 
-
-DB Admin RoleBinding
-yaml
-Copy
-
+```yaml
 # prod/rolebindings/db-admin-rolebinding.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -282,62 +282,51 @@ roleRef:
   kind: Role
   name: db-admin
   apiGroup: rbac.authorization.k8s.io
+```
 
-
-
-Apply these roles and bindings:
-bash
-Copy
-
+```bash
 kubectl apply -f prod/roles/
 kubectl apply -f prod/rolebindings/
+```
 
+---
 
+### 4. Service Accounts
 
+Service accounts are used for **CI/CD pipelines and automation** — avoiding the use of personal user credentials.
 
-Service Accounts <a name="service-accounts"></a>
-Service accounts are used for automation and CI/CD pipelines.
-Pipeline Service Account in Dev
-yaml
-Copy
-
+```yaml
 # dev/serviceaccounts/pipeline-sa.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: pipeline
   namespace: dev
+```
 
-
-
-Pipeline Service Account in Prod
-yaml
-Copy
-
+```yaml
 # prod/serviceaccounts/pipeline-sa.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: pipeline
   namespace: prod
+```
 
-
-
-Apply these service accounts:
-bash
-Copy
-
+```bash
 kubectl apply -f dev/serviceaccounts/
 kubectl apply -f prod/serviceaccounts/
+```
 
+---
 
+### 5. Resource Quotas & Limit Ranges
 
+Resource quotas prevent any single namespace from consuming excessive cluster resources.
 
-Resource Quotas and Limit Ranges <a name="resource-quotas-and-limit-ranges"></a>
-Dev Resource Quota
-yaml
-Copy
+#### Dev Namespace
 
+```yaml
 # dev/resourcequotas/dev-quota.yaml
 apiVersion: v1
 kind: ResourceQuota
@@ -351,13 +340,9 @@ spec:
     requests.memory: 8Gi
     limits.cpu: "8"
     limits.memory: 16Gi
+```
 
-
-
-Dev Limit Range
-yaml
-Copy
-
+```yaml
 # dev/limitranges/dev-limits.yaml
 apiVersion: v1
 kind: LimitRange
@@ -366,154 +351,177 @@ metadata:
   namespace: dev
 spec:
   limits:
-  - default:
+  - type: Container
+    default:
       cpu: 500m
       memory: 1Gi
     defaultRequest:
       cpu: 200m
       memory: 512Mi
-    type: Container
+```
 
-
-
-Apply these quotas and limits:
-bash
-Copy
-
+```bash
 kubectl apply -f dev/resourcequotas/
 kubectl apply -f dev/limitranges/
 kubectl apply -f prod/resourcequotas/
 kubectl apply -f prod/limitranges/
+```
 
+---
 
+### 6. Istio Setup
 
+Istio adds a **service mesh layer** providing mutual TLS, traffic policies, and rich observability.
 
-Istio Setup <a name="istio-setup"></a>
-Istio provides service mesh capabilities for observability, security, and traffic management.
-Install Istio
-bash
-Copy
+#### Install Istio
 
+```bash
 curl -L https://istio.io/downloadIstio | sh -
-cd istio-*
+cd istio-1.29.1
 export PATH=$PWD/bin:$PATH
 istioctl install --set profile=demo -y
+```
 
+#### Enable Sidecar Injection
 
-
-Enable Istio Sidecar Injection
-bash
-Copy
-
+```bash
 kubectl label namespace dev istio-injection=enabled
 kubectl label namespace prod istio-injection=enabled
+```
 
+> **Note:** Pods must be restarted after labeling for the Istio sidecar to be injected into existing workloads.
 
+```bash
+# Restart existing deployments to pick up sidecar injection
+kubectl rollout restart deployment -n dev
+kubectl rollout restart deployment -n prod
+```
 
+---
 
-Usage <a name="usage"></a>
+## 🚀 Usage
 
+### Switching User Contexts
 
-Access Cluster as a User:
+Each user has their own kubeconfig file backed by an X.509 certificate. Set the context before running any commands:
 
-Use the respective kubeconfig file for each user.
-Example for vipin:
-bash
-Copy
-
+```bash
+# Switch to vipin's context (dev namespace)
 export KUBECONFIG=/path/to/vipin-kubeconfig
 kubectl get pods -n dev
 
+# Switch to devuser's context (prod namespace)
+export KUBECONFIG=/path/to/devuser-kubeconfig
+kubectl get pods -n prod
+```
 
+### Deploying Applications
 
-
-
-
-Deploy Applications:
-
-Deploy your applications in the respective namespaces.
-Example:
-bash
-Copy
-
+```bash
+# Deploy to dev
 kubectl apply -f your-app.yaml -n dev
 
+# Deploy to prod
+kubectl apply -f your-app.yaml -n prod
+```
 
+### Observability with Istio
 
-
-
-
-Monitor with Istio:
-
-Use Istio tools like Kiali for observability.
-bash
-Copy
-
+```bash
+# Open Kiali dashboard (service mesh topology)
 istioctl dashboard kiali
 
+# Open Grafana (metrics)
+istioctl dashboard grafana
 
+# Open Jaeger (distributed tracing)
+istioctl dashboard jaeger
+```
 
+---
 
+## 🔧 Troubleshooting
 
-Troubleshooting <a name="troubleshooting"></a>
-Issue 1: Permission Denied
+### ❌ Permission Denied
 
-Cause: Incorrect RBAC rules or missing roles/rolebindings.
-Solution: Verify roles and rolebindings are correctly applied.
-bash
-Copy
+**Cause:** Incorrect RBAC rules or missing roles/rolebindings.
 
+```bash
+# Inspect roles and bindings in the dev namespace
 kubectl get roles,rolebindings -n dev
+
+# Describe a specific binding
 kubectl describe rolebinding developer-binding -n dev
 
+# Test permissions for a specific user
+kubectl auth can-i get pods -n dev --as=vipin
+```
 
+---
 
+### ❌ Unable to Access Namespace
 
-Issue 2: Unable to Access Namespace
+**Cause:** Wrong Kubernetes context or kubeconfig file.
 
-Cause: Incorrect context or kubeconfig file.
-Solution: Verify the context and kubeconfig file.
-bash
-Copy
-
+```bash
 kubectl config get-contexts
+kubectl config use-context <context-name>
 kubectl config view
+```
 
+---
 
+### ❌ Istio Sidecar Not Injected
 
+**Cause:** Namespace missing the Istio injection label.
 
-Issue 3: Istio Sidecar Not Injected
+```bash
+# Verify labels
+kubectl get namespace dev --show-labels
 
-Cause: Namespace not labeled for Istio sidecar injection.
-Solution: Label the namespace for Istio sidecar injection.
-bash
-Copy
+# Re-apply the label if missing
+kubectl label namespace dev istio-injection=enabled --overwrite
 
-kubectl label namespace dev istio-injection=enabled
+# Restart pods to trigger injection
+kubectl rollout restart deployment -n dev
+```
 
+---
 
+### ❌ Certificate Errors
 
+**Cause:** Missing or incorrect `ca.crt` in the kubeconfig file.
 
-Issue 4: Certificate Errors
-
-Cause: Missing or incorrect ca.crt file.
-Solution: Ensure ca.crt is correctly referenced in the kubeconfig file.
-bash
-Copy
-
+```bash
+# Verify the CA certificate reference
 grep 'certificate-authority' ~/.kube/config
 
+# Check certificate validity
+openssl x509 -in certificates/vipin.crt -text -noout | grep -E "Subject|Validity"
+```
 
+---
 
+## 💡 Best Practices
 
+| Practice | Description |
+|---|---|
+| **Least Privilege** | Grant only the minimum permissions required — avoid wildcard verbs in production roles |
+| **Regular Audits** | Periodically review roles, bindings, and service account permissions |
+| **Use Service Accounts** | Never use personal user credentials for automated workloads or pipelines |
+| **Rotate Certificates** | Rotate X.509 certificates regularly and keep private keys secure |
+| **Enable Audit Logging** | Use Kubernetes audit logs alongside Istio telemetry for full traceability |
+| **Namespace Isolation** | Use `NetworkPolicy` in addition to RBAC for stronger workload isolation |
+| **Avoid ClusterAdmin** | Restrict `cluster-admin` to break-glass scenarios only |
 
-Best Practices <a name="best-practices"></a>
+---
 
-Least Privilege: Grant the minimum permissions necessary for each user or service account.
-Regular Audits: Regularly review and audit roles, rolebindings, and permissions.
-Use Service Accounts for Automation: Avoid using user credentials for automation; use service accounts instead.
-Monitor and Log: Use Istio and Kubernetes audit logs to monitor and log access and activities.
-Rotate Certificates: Regularly rotate certificates and keys to maintain security.
+## 📄 License
 
-License <a name="license"></a>
-This project is licensed under the MIT License.
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
+<p align="center">
+  Made with ❤️ for secure Kubernetes multi-tenancy
+</p>
